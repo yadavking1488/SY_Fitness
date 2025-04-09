@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Cart - Fitness Store</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="logo.png" type="image/png" />
+  <style>
+    .cart-item { display: flex; margin-bottom: 20px; }
+    .item-details { margin-left: 20px; }
+    .item-controls { display: flex; gap: 10px; align-items: center; }
+    .remove-btn { background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    .checkout-btn { margin-top: 15px; padding: 10px 20px; background: green; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="menubar">
+      <div class="logo">
+        <img src="logo.png" alt="Fitness Store Logo" />
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="cart.html">Cart (<span class="cart-count">0</span>)</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="cart-container">
+    <h1>Your Shopping Cart</h1>
+
+    <section class="cart-items" id="cart-items-container">
+      <!-- Items injected by JS -->
+    </section>
+
+    <section class="checkout-section">
+      <div class="order-summary">
+        <h2>Order Summary</h2>
+        <div class="summary-row">
+          <span>Subtotal:</span>
+          <span id="subtotal">$0.00</span>
+        </div>
+        <div class="summary-row">
+          <span>Shipping:</span>
+          <span id="shipping">$29.99</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total:</span>
+          <span id="total">$0.00</span>
+        </div>
+        <button class="checkout-btn">Proceed to Checkout</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const shippingCost = 29.99;
+
+    function getCartItems() {
+      return JSON.parse(localStorage.getItem("cart")) || [];
+    }
+
+    function saveCartItems(items) {
+      localStorage.setItem("cart", JSON.stringify(items));
+    }
+
+    function updateCartCount() {
+      const cart = getCartItems();
+      const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      document.querySelectorAll(".cart-count").forEach(span => {
+        span.textContent = totalCount;
+      });
+    }
+
+    function updateTotals() {
+      const items = document.querySelectorAll(".cart-item");
+      let subtotal = 0;
+
+      items.forEach(item => {
+        const price = parseFloat(item.dataset.price);
+        const quantity = parseInt(item.querySelector(".quantity").value);
+        const itemTotal = price * quantity;
+        item.querySelector(".price").textContent = `$${itemTotal.toFixed(2)}`;
+        subtotal += itemTotal;
+      });
+
+      document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+      document.getElementById("total").textContent = `$${(subtotal + shippingCost).toFixed(2)}`;
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById("cart-items-container");
+      const cartItems = getCartItems();
+      container.innerHTML = "";
+
+      if (cartItems.length === 0) {
+        container.innerHTML = "<p>Your cart is empty</p>";
+        return;
+      }
+
+      cartItems.forEach(item => {
+        const itemElement = document.createElement("div");
+        itemElement.className = "cart-item";
+        itemElement.dataset.name = item.name;
+        itemElement.dataset.price = item.price;
+        itemElement.innerHTML = `
+          <img src="${item.image}" alt="${item.name}" width="120" />
+          <div class="item-details">
+            <h3>${item.name}</h3>
+            <p>${
+              item.name.includes("Dumbbell") ? "Premium rubber coated" :
+              item.name.includes("Treadmill") ? "Foldable with 12 programs" :
+              item.name.includes("Yoga") ? "Non-slip, extra thick" :
+              "Heart rate monitor & sleep tracker"
+            }</p>
+            <div class="item-controls">
+              <input type="number" value="${item.quantity}" min="1" class="quantity" />
+              <span class="price">$${(item.price * item.quantity).toFixed(2)}</span>
+              <button class="remove-btn">Remove</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(itemElement);
+      });
+
+      addEventListenersToCart();
+      updateTotals();
+    }
+
+    function addEventListenersToCart() {
+      document.querySelectorAll(".quantity").forEach(input => {
+        input.addEventListener("input", (e) => {
+          const itemElement = e.target.closest(".cart-item");
+          const name = itemElement.dataset.name;
+          const newQty = parseInt(e.target.value);
+          const cart = getCartItems();
+          const item = cart.find(i => i.name === name);
+          if (item) {
+            item.quantity = newQty;
+            saveCartItems(cart);
+            updateTotals();
+            updateCartCount();
+          }
+        });
+      });
+
+      document.querySelectorAll(".remove-btn").forEach(button => {
+        button.addEventListener("click", (e) => {
+          const itemElement = e.target.closest(".cart-item");
+          const name = itemElement.dataset.name;
+          let cart = getCartItems();
+          cart = cart.filter(item => item.name !== name);
+          saveCartItems(cart);
+          renderCartItems();
+          updateCartCount();
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCartItems();
+      updateCartCount();
+    });
+  </script>
+</body>
+</html>

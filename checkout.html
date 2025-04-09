@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout - Fitness Store</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .checkout-container {
+      max-width: 800px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    form input, form textarea, form select {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.7rem;
+    }
+
+    .order-summary {
+      background: #f7f7f7;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    .place-order-btn {
+      padding: 10px 20px;
+      background: green;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .confirmation {
+      padding: 1rem;
+      background: #dff0d8;
+      color: green;
+      margin-top: 1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-container">
+    <h1>Checkout</h1>
+
+    <form id="checkout-form">
+      <h2>Shipping Information</h2>
+      <input type="text" id="name" placeholder="Full Name" required />
+      <input type="email" id="email" placeholder="Email Address" required />
+      <input type="text" id="address" placeholder="Address" required />
+      <input type="text" id="city" placeholder="City" required />
+      <input type="text" id="zip" placeholder="ZIP / Postal Code" required />
+
+      <h2>Payment Info (Simulation)</h2>
+      <input type="text" id="card" placeholder="Card Number" required />
+      <input type="text" id="exp" placeholder="Expiry (MM/YY)" required />
+      <input type="text" id="cvv" placeholder="CVV" required />
+
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <p id="order-summary-text">Loading...</p>
+      </div>
+
+      <button type="submit" class="place-order-btn">Place Order</button>
+    </form>
+
+    <div class="confirmation" id="confirmation-message">
+      ✅ Order placed successfully! We'll ship your fitness gear soon!
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('checkout-form');
+    const summaryText = document.getElementById('order-summary-text');
+    const confirmation = document.getElementById('confirmation-message');
+
+    function getCartItems() {
+      return JSON.parse(localStorage.getItem('cartItems') || '[]');
+    }
+
+    function calculateTotal(cartItems) {
+      const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const shipping = 29.99;
+      const total = subtotal + shipping;
+      return { subtotal, shipping, total };
+    }
+
+    function displayOrderSummary() {
+      const cart = getCartItems();
+      if (cart.length === 0) {
+        summaryText.innerHTML = "Your cart is empty.";
+        return;
+      }
+
+      const { subtotal, shipping, total } = calculateTotal(cart);
+      summaryText.innerHTML = `
+        Items: ${cart.map(item => `${item.name} x${item.quantity}`).join(", ")}<br/>
+        Subtotal: $${subtotal.toFixed(2)}<br/>
+        Shipping: $${shipping.toFixed(2)}<br/>
+        <strong>Total: $${total.toFixed(2)}</strong>
+      `;
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Normally you would validate and send to server or payment API
+      localStorage.removeItem('cartItems');
+      form.reset();
+      confirmation.style.display = 'block';
+      summaryText.innerHTML = "Your cart is empty.";
+    });
+
+    document.addEventListener('DOMContentLoaded', displayOrderSummary);
+    
+  function payWithRazorpay() {
+    const total = parseFloat(document.getElementById('total').textContent.replace('$', '')) * 100; // Razorpay uses paise
+
+    const options = {
+      key: "YOUR_RAZORPAY_KEY", // Replace with your key
+      amount: total,
+      currency: "USD",
+      name: "Fitness Store",
+      description: "Checkout Payment",
+      image: "images/logo.png",
+      handler: function (response) {
+        alert("Payment successful! Razorpay ID: " + response.razorpay_payment_id);
+        // Redirect or confirm order
+      },
+      prefill: {
+        name: "Customer Name",
+        email: "customer@example.com",
+      },
+      theme: {
+        color: "#3399cc",
+      },
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  }
+
+  </script>
+</body>
+</html>
